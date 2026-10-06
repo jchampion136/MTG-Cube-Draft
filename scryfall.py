@@ -17,24 +17,36 @@ class Scryfall:
         self._cache = OrderedDict() //Create empty cache for failed fetched responses.
         self._lock = asyncio.Lock() //Creates a lock to only allow one coroutine to process at a time
         self._next_request = 0.0
-        self._blocked_until = 0.0
+        self._blocked_until = 0.0 //Stores clock time when a rate-limit cooldown ends
 
-    //Shared function for retrieving JSON data from Scryfall 
+    /*Shared function for retrieving JSON data from Scryfall
+        path: str - determines which endpoint to request such as "/cards/named"
+        params=None — optional query parameters, such as {"exact": "Kaalia of the Vast"}.
+        ttl=3600 — how many seconds to keep the response cached; (defaults to one hour).
+    */
     async def _get(self, path: str, params=None, ttl=3600):
         url = path if path.startswith("https://") else self.BASE + path
         if urlparse(url).scheme != "https" or urlparse(url).netloc != "api.scryfall.com":
             raise UserError("Scryfall returned an unexpected pagination URL.")
         key = (url, tuple(sorted((params or {}).items())))
-        async with self._lock:
-            now = time.monotonic()
-            cached = self._cache.get(key)
+        /*Create Cache key to identify request
+        e.g. url = "https://api.scryfall.com/cards/named"
+            params = {"exact": "Kaalia of the Vast", "set": "c17"}
+        */
+        async with self._lock: //Session waits until another session completes
+            now = time.monotonic() //Gets a clock reading in s.
+            cached = self._cache.get(key) //Returns saved entry in cache, or None if none exists
+            
+            //Checks if entry exists and hasnt expired
             if cached and cached[0] > now:
                 self._cache.move_to_end(key)
                 return cached[1]
+
+            //If cache request fail, check whether a rate-limit cooldown is active, stop lookup and throw an error
             if now < self._blocked_until:
                 raise UserError("Scryfall is rate-limiting requests. Please try again later.")
-            await asyncio.sleep(max(0, self._next_request - now))
-            self._next_request = time.monotonic() + 0.12
+            //await asyncio.sleep(max(0, self._next_request - now))
+            self._next_request = time.monotonic() + 0.12 //Sets the Earliest time for the next request to 120 milliseconds.
 
             try:
               async with self.session.get(url, params=params) as response:
