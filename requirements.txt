@@ -1,0 +1,5 @@
+# The People's Cube runtime dependencies. Requires Python 3.11 or newer.
+# sqlite3, asyncio, json, and other standard-library modules are built into Python.
+discord.py>=2.6,<3
+aiohttp>=3.12,<4
+python-dotenv>=1,<
