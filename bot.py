@@ -1,32 +1,24 @@
-import logging
-import os
-import discord
+"""Cube'd Phase 1: run this file beside models.py, repository.py, and scryfall.py."""
+
+import asyncio
 import json
+import logging
 import math
+import os
+from pathlib import Path
 import time
 from dataclasses import dataclass
 
 import aiohttp
-
+import discord
 from discord import app_commands
-from database import init_db
 from dotenv import load_dotenv
 
-from .models import Card, UserError
-from .repository import Repository
-from .scryfall import Scryfall
+from models import Card, UserError
+from repository import Repository
+from scryfall import Scryfall
 
-load_dotenv()
-token = os.getenv("DISCORD_TOKEN")
-settings = Settings(
-        database_path=os.getenv("DATABASE_PATH", "data/cube.sqlite3"),
-        guild_id=guild_id,
-        confirmation_timeout=timeout,
-        user_agent=os.getenv("SCRYFALL_USER_AGENT", Settings.user_agent),
-)
+log = logging.getLogger(__name__)
 
-logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s: %(message)s")
-bot = CubeBot(settings)
-bot.run(token, log_handler=None)
-init_db()
+
 

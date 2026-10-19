@@ -3,7 +3,7 @@ import json
 import sqlite3
 from pathlib import Path
 
-from .models import Card, UserError
+from models import Card, UserError
 
 SCHEMA = """
 CREATE TABLE IF NOT EXISTS nominations (
